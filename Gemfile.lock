@@ -1,0 +1,54 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ast (2.3.0)
+    childprocess (0.5.9)
+      ffi (~> 1.0, >= 1.0.11)
+    coderay (1.1.1)
+    ffi (1.9.14)
+    method_source (0.8.2)
+    parser (2.3.1.2)
+      ast (~> 2.2)
+    powerpack (0.1.1)
+    pry (0.10.4)
+      coderay (~> 1.1.0)
+      method_source (~> 0.8.1)
+      slop (~> 3.4)
+    pry-doc (0.9.0)
+      pry (~> 0.9)
+      yard (~> 0.8)
+    rainbow (2.1.0)
+    rubocop (0.42.0)
+      parser (>= 2.3.1.1, < 3.0)
+      powerpack (~> 0.1)
+      rainbow (>= 1.99.1, < 3.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (~> 1.0, >= 1.0.1)
+    ruby-progressbar (1.8.1)
+    ruby_parser (3.8.2)
+      sexp_processor (~> 4.1)
+    rubyzip (1.2.0)
+    selenium-webdriver (3.0.0.beta2.1)
+      childprocess (~> 0.5)
+      rubyzip (~> 1.0)
+      websocket (~> 1.0)
+    sexp_processor (4.7.0)
+    slop (3.6.0)
+    unicode-display_width (1.1.0)
+    watir (6.0.0.beta3)
+      selenium-webdriver (>= 3.0.0.beta2.1)
+    websocket (1.2.3)
+    yard (0.9.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  pry
+  pry-doc
+  rubocop
+  ruby_parser
+  watir (>= 6.0.0.beta2)
+
+BUNDLED WITH
+   1.12.5
