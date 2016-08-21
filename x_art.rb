@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'watir'
 
 # XArt scraper
@@ -9,7 +10,7 @@ class XArt
   def initialize
     switches = %w(--user-data-dir=/Users/apple/Library/Application\ Support/Google/Chrome/)
     @browser = Watir::Browser.new :chrome, switches: switches
-    browser.goto 'http://www.x-art.com/updates/'
+    @browser.goto 'http://www.x-art.com/updates/'
   end
 
   def wait_element(*args)
@@ -39,18 +40,24 @@ class XArt
     format '%04d-%02d-%02d', year, month, day
   end
 
+  # div 에서 각종 정보를 찾는다
+  def find_info(div)
+    header = div.div(class: 'item-header')
+    header = div.div(class: 'columns') unless header.exist?
+    return nil unless header.exist?
+
+    img = div.img
+    info = Info.new
+    info.title = header.h1.text
+    info.date = convert_date(header.h2s[1].text)
+    info.image = img.src
+    puts "#{info.title} #{info.image} #{info.date}"
+    info
+  end
+
   def find_infos
-    @browser.divs(class: 'item').map do |div|
-      header = div.div(class: 'item-header')
-      next unless header.exist?
-      img = div.img
-      info = Info.new
-      info.title = header.h1.text
-      info.date = convert_date(header.h2s[1].text)
-      info.image = img.src
-      puts "#{info.title} #{info.image} #{info.date}"
-      info
-    end.select { |div| !div.nil? }
+    infos = @browser.divs(class: 'item').map { |div| find_info div }
+    infos.select { |info| !info.nil? }
   end
 
   def same_title_adjacent?(infos, i)
@@ -58,12 +65,24 @@ class XArt
       i < infos.length - 1 && infos[i + 1].title == infos[i].title
   end
 
-  def remove_duplicate(infos)
+  def mark_duplicate(infos)
     infos.each_with_index do |info, i|
       if same_title_adjacent?(infos, i) && info.image =~ %r{/videos/}
         info.skip = true
       end
     end
+  end
+
+  def find_unique_infos(old_infos)
+    infos = find_infos
+    if old_infos
+      last_index = infos.find_index do |info|
+        info.title == old_infos.last.title && info.image == old_infos.last.image
+      end
+      infos = infos[last_index + 1, infos.length]
+    end
+    infos = mark_duplicate(infos)
+    infos.select { |info| !info.skip }
   end
 
   def open_plex
@@ -92,7 +111,7 @@ class XArt
     inp.set(url, :return)
   end
 
-  def search(info)
+  def enter(info)
     quick_search = wait_element(tag_name: 'input',
                                 class: 'QuickSearchInput-searchInput-wnRxj')
     quick_search.to_subtype.set info.title
@@ -104,8 +123,8 @@ class XArt
     edit_button = wait_element(class: 'edit-btn')
     edit_button.click
 
-    input_field_title('lockable-title', 'X-Art ' + info.title)
-    input_field_title('lockable-titleSort', 'X-Art ' + info.title)
+    input_field_title('lockable-title', '[X-Art] ' + info.title)
+    input_field_title('lockable-titleSort', '[X-Art] ' + info.title)
     input_field_date('lockable-originallyAvailableAt', info.date)
     input_field_title('lockable-contentRating', 'X')
     input_field_title('lockable-studio', 'X-Art')
@@ -124,12 +143,33 @@ class XArt
     save_button.click
   end
 
-  def scrape
-    infos = find_infos
-    infos = remove_duplicate(infos)
-    open_plex
+  def print(infos)
     infos.each do |info|
-      search(info) unless info.skip
+      puts "#{info.title} #{info.image} #{info.date}"
+    end
+  end
+
+  def scrape
+    old_infos = nil
+    loop do
+      infos = find_unique_infos(old_infos)
+
+      open_plex
+      infos.each do |info|
+        enter(info)
+      end
+
+      @browser.windows.last.close
+
+      item_count = @browser.divs(class: 'item').length
+      @browser.send_keys :page_down
+
+      sleep 0.1 while item_count == @browser.divs(class: 'item').length
+
+      puts "#{item_count} #{@browser.divs(class: 'item').length}"
+      puts '------------------------------'
+
+      old_infos = infos
     end
   end
 end
